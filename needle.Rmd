@@ -1,0 +1,272 @@
+---
+title: "Buffon's Needle"
+author: "Samuel A. Martinez Koss"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Scenario
+
+The Buffon's Needle problem poses the following question: If a needle is dropped
+above a hardwood floor (supposing the wood strips are of equal width), what are
+the chances that the needle lies across a line between two strips? This is
+often reframed in terms of dropping sticks over an array of parallel and
+equidistant lines.
+
+The solution to this scenario, from a naive perspective, is unexpected. It
+elucidates some key insights involving rotational symmetry and geometric
+probability, and can even be taken advantage of to approximate pi.
+
+\
+
+Some references to this problem:
+
+- https://en.wikipedia.org/wiki/Buffon%27s_needle_problem
+
+- https://www.exploratorium.edu/exhibits/pi-toss
+
+- https://youtu.be/sJVivjuMfWA?si=kNZymNkyLpTj2qE7
+
+\newpage
+
+## Math
+
+From a frequentist approach, the probability we are concerned with can be viewed
+as the ratio
+$\frac{\text{number of sticks crossing}}{\text{number of sticks dropped}}$. We
+define the following variables:
+
+$$
+\begin{aligned}
+l &: \text{length of sticks} \\
+s &: \text{number of sticks} \\
+c &: \text{number of sticks crossing} \\
+d &: \text{distance between lines}
+\end{aligned}
+$$
+
+Next, we interrogate what it means for a stick to be dropped randomly above our
+lines. In order to ascertain whether a dropped stick is crossing a line, we need
+positional information as well as rotational information.
+
+Consider that the center of a randomly dropped stick might fall arbitrarily
+close to a line. If the stick is not rotated to an angle substantially extreme,
+then the perpendicular length of the stick to the line will not be sufficient to
+cross over the line. Therefore the state of a stick's crossing is contingent on
+these two parameters:
+
+$$
+\begin{aligned}
+x &: \text{distance of stick center from nearest line} \\
+\theta &: \text{rotation of stick along its center}
+\end{aligned}
+$$
+
+Now we examine what condition exists for a stick to be crossing a line. Note
+however that if $l>d$, it is possible for a single stick to cross multiple
+lines. For the purposes of these calculations, we will consider only the case
+where $l\le{}d$. We then see that $x\in\left[0,\frac{d}{2}\right]$. We can
+similarly put bounds on $\theta$ by considering its symmetries and realizing
+that the behavior of its rotation on crossing in one quadrant extends to all
+other quadrants, so we use $\theta\in\left[0,\frac{\pi}{2}\right)$. Finally, see
+that when $x\le\frac{l\sin(\theta)}{2}$ a stick can be considered to be crossing
+a line, as the length of stick perpendicular to the array of lines would be
+greater than the distance of the center of the stick to the nearest line.
+
+Because the distributions of $x$ and of $\theta$ are uniform and independent, it
+thus follows that the probability of a stick crossing a line is:
+
+$$
+\begin{aligned}
+\mathbb{P} &= \int_0^{\pi/2}\int_0^{l\sin(\theta)/2}\frac{4}{d\pi}\space{}dx\space{}d\theta \\
+&= \int_0^{\pi/2}\left[\frac{4}{d\pi}x\right]_0^{l\sin(\theta)/2}\space{}d\theta \\
+&= \int_0^{\pi/2}\frac{4l\sin(\theta)}{2d\pi}\space{}d\theta \\
+&= \int_0^{\pi/2}\frac{2l\sin(\theta)}{d\pi}\space{}d\theta \\
+&= \left[\frac{-2l\cos(\theta)}{d\pi}\right]_0^{\pi/2} \\
+&= 0-\frac{-2l}{d\pi} \\
+&= \frac{2l}{d\pi}.
+\end{aligned}
+$$
+
+Thus if we choose $l=1$ and $d=1$, we find:
+
+$$
+\mathbb{P}=\frac{2l}{d\pi}=\frac{2\cdot1}{1\cdot\pi}=\frac{2}{\pi}\approx0.63662.
+$$
+
+\newpage
+
+## Simulations
+
+This probability can be estimated using simulations as $\mathbb{P}\approx{}c/s$.
+
+Because we are no longer dealing with integral calculations we can generate
+$\theta\in[0,2\pi)$, but will continue to generate
+$x\in\left[0,\frac{d}{2}\right]$.
+
+\
+
+```{r}
+crossing <- function(length, angle, dist_center_from_line){
+  if (angle %% pi > pi / 2){
+    angle <- pi - (angle %% pi)
+  }
+  perpendicular_half_length <- abs(sin(angle)) * length / 2
+  
+  return(perpendicular_half_length >=  dist_center_from_line)
+}
+```
+
+```{r}
+buffon_crossings <- function(length, distance_between_lines, num_sims){
+  angles <- runif(num_sims, 0, 2 * pi)
+  dist_cent_to_line <- runif(num_sims, 0, distance_between_lines / 2)
+  
+  crossings <- 0
+  for (i in 1: num_sims){
+    crossings <- crossings + crossing(length, angles[i], dist_cent_to_line[i])
+  }
+  
+  return(crossings)
+}
+```
+
+\
+
+```{r}
+s <- 10000
+l <- 1
+d <- 1
+c <- buffon_crossings(l, d, s)
+
+print(paste("Estimated P:", c / s))
+```
+
+\newpage
+
+## Pi
+
+See that
+
+$$
+\mathbb{P}=\frac{2l}{d\pi},\mathbb{P}\approx\frac{c}{s}
+\rightarrow\frac{c}{s}\approx\frac{2l}{d\pi} \\
+\implies\pi\approx2\frac{ls}{cd},l\le{}d.
+$$
+
+Pi can then also be estimated using a simulation approach!
+
+```{r}
+s <- 10000
+l <- 1
+d <- 1
+c <- buffon_crossings(l, d, s)
+
+print(paste("pi:", 2 * l * s / c / d))
+```
+
+\newpage
+
+## Targeting Pi Fractions
+
+Let's here arbitrarily choose $l=5$ and $d=8$. Then
+
+$$
+\pi\approx\frac{5}{8}\cdot\frac{s}{c}.
+$$
+
+We can choose to "target" a pi fraction accurate to 10 decimal places as
+follows:
+
+    From Sloan's:
+    A002485: 0, 1, 3, 22, 333, 355, 103993, 104348, 208341, 312689, ...
+    A002486: 1, 0, 1,  7, 106, 113,  33102,  33215,  66317,  99532, ...
+    A114526: -, -, 0,  2,   4,   6,      9,      9,      9,     10, ...
+
+$$
+\begin{aligned}
+\pi &\approx \frac{312689}{99532}=2\cdot\frac{5}{8}\cdot\frac{s}{c} \\
+\implies{}c &= \frac{124415\cdot{}s}{312689}.
+\end{aligned}
+$$
+
+Now $s$ should be chosen as a multiple of $312689$ so that
+$\frac{124415\cdot{}s}{312689}$ is an integer and $c$ can satisfy the fraction.
+
+See that this holds:
+
+```{r}
+sprintf("%.10f", 2 * 5 * 312689 / 8 / 124415)
+```
+
+\
+
+Finally, pi may be estimated, and simulations may be done repeatedly to
+artificially approach a highly accurate approximation to pi. Do note however
+that high accuracy in this case, particularly with this pi fraction, occurs with
+extraordinarily low probability.
+
+```{r}
+s <- 312689 * 1
+l <- 5
+d <- 8
+c <- buffon_crossings(l, d, s)
+
+print(paste("pi:", 2 * l * s / c / d))
+```
+
+\
+
+Lazzarini famously attempted to generate a pi estimate like this, targeting the
+fraction $355/113$, but his methodology has been questioned and his counts were
+reportedly doctored.
+
+We show a simple and successful version of this approach on the following page.
+
+\newpage
+
+## Targeting 22/7
+
+We explicitly target the pi approximation of $22/7$ by repeatedly running a
+small simulation and summing the counts until a ratio of $c$ to $s$ is met.
+
+Choose $l=1$ and $d=1$.
+
+$$
+\begin{aligned}
+\pi &\approx \frac{22}{7}=2\cdot\frac{1}{1}\cdot\frac{s}{c} \\
+\implies{}c &= \frac{7\cdot{}s}{11}.
+\end{aligned}
+$$
+
+```{r}
+stop <- 0
+reps <- 0
+
+s <- 11
+l <- 1
+d <- 1
+c <- 0
+
+while (!stop){
+  reps <- reps + 1
+  c <- c + buffon_crossings(l, d, s)
+  
+  if (c / s / reps == 7 / 11){
+    stop <- 1
+  }
+}
+```
+
+```{r, echo = FALSE}
+print(paste("pi (22/7):                      ", 2 * l * s * reps / c / d))
+print(paste("number of repetitions:          ", reps))
+print(paste("total number of sticks dropped: ", s * reps))
+print(paste("total number of sticks crossing:", c))
+print(paste0("stop condition satisfied by:     ", c, "/", s * reps, " == 7/11"))
+```
+
