@@ -25,7 +25,7 @@ Some references to this problem:
 
 ## Math
 
-The probability can be calculated mathematically as follows:
+The probability can be calculated mathematically as follows for $l\le{}d$:
 
 $$
 \begin{aligned}
