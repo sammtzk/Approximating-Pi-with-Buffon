@@ -1,4 +1,4 @@
-# geometric_pi_mcm
+# Approximating-Pi-with-Buffon
 A Monte Carlo method for calculating $\pi$ based on the needle problem posed by Georges-Louis Leclerc.
 
 An overview of the work of this repository is provided below, but greater detail is provided in [needle.Rmd](needle.Rmd) and [needle.pdf](needle.pdf).
